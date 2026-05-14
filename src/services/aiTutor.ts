@@ -1,57 +1,70 @@
 import type { EnglishLevel, TutorReply } from "@/types/tutor";
 
-/** Simulates network latency for a more realistic UX while mocking. */
-const MOCK_DELAY_MS = 700;
+const TUTOR_PATH = "/api/tutor";
+
+function tutorEndpoint(): string {
+  const base = import.meta.env.VITE_API_BASE_URL;
+  if (typeof base === "string" && base.trim()) {
+    return `${base.replace(/\/$/, "")}${TUTOR_PATH}`;
+  }
+  return TUTOR_PATH;
+}
+
+type TutorErrorBody = { error?: string };
 
 /**
- * Sends the learner message to a mock tutor backend.
- * Replace the body with a real HTTP call when the API is ready.
+ * Sends the learner message to the local tutor API (OpenAI on the server).
+ * In dev, Vite proxies `/api` to the Express server on port 8787.
  */
 export async function sendTutorMessage(
   userText: string,
   level: EnglishLevel,
 ): Promise<TutorReply> {
-  const trimmed = userText.trim();
-  await new Promise((resolve) => setTimeout(resolve, MOCK_DELAY_MS));
+  const res = await fetch(tutorEndpoint(), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: userText, level }),
+  });
 
-  const assistantMessage = buildAssistantReply(trimmed, level);
-  const correction = buildOptionalCorrection(trimmed);
-
-  return { assistantMessage, correction };
-}
-
-function buildAssistantReply(text: string, level: EnglishLevel): string {
-  if (!text) {
-    return "Go ahead whenever you are ready — tell me what you would like to practice today.";
+  const raw = await res.text();
+  let data: unknown;
+  try {
+    data = raw ? JSON.parse(raw) : {};
+  } catch {
+    throw new Error("Tutor response was not valid JSON.");
   }
 
-  return [
-    `Here is a tailored idea for a ${level} learner based on what you wrote:`,
-    "",
-    `1) Rephrase your idea in one clearer sentence: "${text.slice(0, 120)}${text.length > 120 ? "…" : ""}"`,
-    "2) Add one follow-up question you could ask a native speaker.",
-    "3) Try swapping one informal word for a slightly more precise synonym.",
-    "",
-    "When you are done, send me your revised sentence and I will give you the next micro-task.",
-  ].join("\n");
-}
+  if (!res.ok) {
+    const msg =
+      typeof (data as TutorErrorBody).error === "string"
+        ? (data as TutorErrorBody).error
+        : `Request failed (${res.status})`;
+    throw new Error(msg);
+  }
 
-function buildOptionalCorrection(text: string) {
-  if (text.length < 12) return undefined;
+  const payload = data as Partial<TutorReply> & { assistantMessage?: unknown };
+  if (typeof payload.assistantMessage !== "string" || !payload.assistantMessage.trim()) {
+    throw new Error("Tutor response missing assistantMessage.");
+  }
 
-  // Lightweight heuristic so the CorrectionCard has sample content.
-  const original = "I am agree with you.";
-  if (text.toLowerCase().includes("agree")) {
+  const assistantMessage = payload.assistantMessage.trim();
+  const c = payload.correction;
+  if (
+    c &&
+    typeof c === "object" &&
+    typeof (c as { original?: unknown }).original === "string" &&
+    typeof (c as { corrected?: unknown }).corrected === "string" &&
+    typeof (c as { tip?: unknown }).tip === "string"
+  ) {
     return {
-      original,
-      corrected: "I agree with you.",
-      tip: 'After "I am", use an adjective or noun — not a bare verb like "agree". Prefer "I agree" or "I am in agreement".',
+      assistantMessage,
+      correction: {
+        original: String((c as { original: string }).original).trim(),
+        corrected: String((c as { corrected: string }).corrected).trim(),
+        tip: String((c as { tip: string }).tip).trim(),
+      },
     };
   }
 
-  return {
-    original: "He dont likes coffee.",
-    corrected: "He doesn't like coffee.",
-    tip: 'Use "does not" (or "doesn\'t") for third-person negatives with most verbs.',
-  };
+  return { assistantMessage };
 }
