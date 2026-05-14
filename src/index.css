@@ -1,0 +1,10 @@
+/* Global baseline; MUI handles most layout and typography. */
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+}
