@@ -24,7 +24,8 @@ Rules:
 - "assistantMessage": Continue the conversation helpfully. If they asked a question, answer it briefly then offer one small follow-up practice idea. Keep tone encouraging.
 - "correction": Use null if their latest message has no clear grammar/usage issue worth a card. If there is an issue, set "original" to a short excerpt of what they actually wrote (not a made-up sentence), "corrected" to your improved version, and "tip" to one clear teaching line.
 - Never invent learner text for "original" — quote or closely paraphrase their wording.
-- If the learner message is empty or only whitespace, set assistantMessage to a short welcome inviting them to share a topic or sentence, and correction to null.`;
+- If the learner message is empty or only whitespace, set assistantMessage to a short welcome inviting them to share a topic or sentence, and correction to null.
+- The learner may use speech-to-text; transcripts can be messy. Focus on meaning and written English. Do not assess, score, or comment on accent or pronunciation unless they clearly ask for pronunciation tips — and even then keep it brief and optional, never evaluative.`;
 
 function isEnglishLevel(value: unknown): value is EnglishLevel {
   return typeof value === "string" && LEVELS.includes(value as EnglishLevel);
