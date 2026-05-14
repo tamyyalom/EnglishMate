@@ -16,7 +16,7 @@ function createId(): string {
   return crypto.randomUUID();
 }
 
-/** Main conversational surface with mock tutor replies. */
+/** Conversational tutor UI backed by the HTTP tutor API. */
 export function ChatPage() {
   const initialLevel = useMemo(() => getStoredLevel() as EnglishLevel, []);
   const [input, setInput] = useState("");
@@ -60,6 +60,15 @@ export function ChatPage() {
       };
       setMessages((prev: ChatMessageModel[]) => [...prev, assistantMessage]);
       setLatestCorrection(reply.correction);
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : "Something went wrong.";
+      const assistantMessage: ChatMessageModel = {
+        id: createId(),
+        role: "assistant",
+        content: `Sorry — I could not reach the tutor just now. (${detail})`,
+        createdAt: new Date().toISOString(),
+      };
+      setMessages((prev: ChatMessageModel[]) => [...prev, assistantMessage]);
     } finally {
       setIsSending(false);
     }
