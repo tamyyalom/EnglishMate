@@ -2,7 +2,6 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
 import Paper from "@mui/material/Paper";
-import LinearProgress from "@mui/material/LinearProgress";
 import { getStoredLevel } from "@/services/session";
 
 /** Static snapshot until analytics and streaks are wired to a backend. */
@@ -19,15 +18,6 @@ export function ProgressPage() {
           Mock dashboard — replace with real metrics from your API.
         </Typography>
       </Box>
-      <Paper variant="outlined" sx={{ p: 2 }}>
-        <Typography variant="subtitle2" color="text.secondary">
-          Weekly speaking minutes
-        </Typography>
-        <Typography variant="h5" sx={{ my: 1 }}>
-          42 / 90
-        </Typography>
-        <LinearProgress variant="determinate" value={46} sx={{ height: 10, borderRadius: 999 }} />
-      </Paper>
       <Paper variant="outlined" sx={{ p: 2 }}>
         <Typography variant="subtitle2" color="text.secondary">
           Current level focus
